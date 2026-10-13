@@ -251,8 +251,8 @@ export default function PuzzleRunner({ puzzles, onDone, doneLabel = 'Finish', ca
       <div className="mb-3">
         <div className="text-[19px] font-semibold tracking-tight">Find the best move for {side}</div>
         <div className="mt-0.5 text-[13px] text-muted">
-          {captionFor ? captionFor(p) : (caption ? caption + ' · ' : '') + `Move ${moveNo}`}
-          {captionFor ? '' : (p.color === 'b' ? '...' : '') + ' · ' + p.phase}
+          {p.src === 'learn' ? 'From a lesson: a question you missed before' : captionFor ? captionFor(p) : (caption ? caption + ' · ' : '') + `Move ${moveNo}`}
+          {captionFor || p.src === 'learn' ? '' : (p.color === 'b' ? '...' : '') + ' · ' + p.phase}
         </div>
       </div>
 

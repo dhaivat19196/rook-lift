@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { TAG_INFO } from '@/lib/core';
 import { useActiveTimer, useQueryParams } from '@/lib/hooks';
 import { markActive } from '@/lib/progress';
+import { dueLearnPuzzles } from '@/lib/learn/progress';
 import { boxCounts, duePuzzles, NEW_PER_DAY, sortForPractice, unseenCount } from '@/lib/srs';
 import { usePuzzles } from '@/lib/store';
 import type { Puzzle } from '@/lib/types';
@@ -51,6 +52,15 @@ export default function PuzzlesPage() {
   const [tag, setTag] = useState<string | null>(null);
   const [started, setStarted] = useState<Puzzle[] | null>(null);
   const [round, setRound] = useState(0);
+  const [extra, setExtra] = useState<{ round: number; list: Puzzle[] } | null>(null);
+  useEffect(() => {
+    // missed lesson questions that are due are mixed into Quick bites
+    let live = true;
+    void dueLearnPuzzles(2).then((l) => live && setExtra({ round, list: l }));
+    return () => {
+      live = false;
+    };
+  }, [round]);
   useEffect(() => {
     const t = q?.get('tag');
     if (t) setTag(t);
@@ -62,7 +72,8 @@ export default function PuzzlesPage() {
   if (mode === 'quick') {
     const due = duePuzzles(all);
     const pool = due.length ? due : sortForPractice(all);
-    const list = pool.slice(0, 5);
+    if (!extra || extra.round !== round) return null;
+    const list = [...pool.slice(0, 5), ...extra.list];
     return (
       <div>
         <BackBar title="Quick bites" href="/" />

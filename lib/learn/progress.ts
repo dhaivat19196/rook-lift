@@ -247,3 +247,53 @@ export async function checkLearnBadges(): Promise<void> {
 }
 
 export { BY_ID };
+
+/** Due missed lesson questions as puzzles, so Quick bites can mix them in with the Blunder Bank. Move questions only. */
+export async function dueLearnPuzzles(max = 2): Promise<import('../types').Puzzle[]> {
+  const { Chess } = await import('chess.js');
+  const items = await dueItems(30);
+  const out: import('../types').Puzzle[] = [];
+  for (const it of items) {
+    const s = stepOfItem(it);
+    if (!s || s.t !== 'move' || s.kind === 'cmd' || s.kind === 'kpk') continue;
+    try {
+      const c = new Chess(s.fen);
+      const color = c.turn();
+      const first = c.move(s.ans[0]);
+      const pv = [first.from + first.to + (first.promotion ?? '')];
+      const k = s.cont?.[0];
+      if (k) {
+        const r = c.move(k.reply);
+        const m2 = c.move(k.ans[0]);
+        pv.push(r.from + r.to + (r.promotion ?? ''), m2.from + m2.to + (m2.promotion ?? ''));
+      }
+      out.push({
+        id: `learn:${it.lessonId}~${it.stepId}`,
+        gameId: it.lessonId,
+        ply: 0,
+        fen: s.fen,
+        color,
+        played: '',
+        playedSan: '',
+        best: pv[0],
+        bestSan: first.san,
+        pv,
+        bestEv: 0,
+        tags: [],
+        phase: 'middlegame',
+        loss: 0,
+        gameEnd: 0,
+        box: it.box,
+        due: it.due,
+        hist: [],
+        createdAt: 0,
+        src: 'learn',
+        note: s.why,
+      });
+    } catch {
+      /* skip */
+    }
+    if (out.length >= max) break;
+  }
+  return out;
+}
