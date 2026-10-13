@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { TAG_INFO } from '@/lib/core';
 import { useActiveTimer, useQueryParams } from '@/lib/hooks';
 import { markActive } from '@/lib/progress';
-import { boxCounts, duePuzzles, sortForPractice } from '@/lib/srs';
+import { boxCounts, duePuzzles, NEW_PER_DAY, sortForPractice, unseenCount } from '@/lib/srs';
 import { usePuzzles } from '@/lib/store';
 import type { Puzzle } from '@/lib/types';
 import { cn } from '@/lib/util';
@@ -112,7 +112,10 @@ export default function PuzzlesPage() {
                   <Label>Due now</Label>
                   <div className="mt-1 text-[34px] font-semibold leading-none tabular">{due.length}</div>
                 </div>
-                <div className="text-right text-[13px] text-muted tabular">{all.length} total</div>
+                <div className="text-right text-[13px] text-muted tabular">
+                  {all.length} in bank
+                  <div>{unseenCount(all)} queued · {NEW_PER_DAY} new/day</div>
+                </div>
               </div>
               <div className="mt-5 flex flex-wrap gap-2">
                 <Chip active={tag === null} onClick={() => setTag(null)}>

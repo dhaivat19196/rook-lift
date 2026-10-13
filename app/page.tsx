@@ -32,7 +32,9 @@ function RatingLadder({ rating }: { rating: number | null | undefined }) {
         </div>
         <div className="text-right">
           <div className="text-[15px] font-medium">{rating ? ratingRank(r) : 'Pawn'}</div>
-          <div className="text-[12px] text-muted">{next ? `${next - r} to ${names[nextIdx]}` : 'Top of the ladder'}</div>
+          <div className="text-[12px] text-muted">
+            {!rating ? 'Import games to place you' : next ? `${next - r} to ${names[nextIdx]}` : 'Top of the ladder'}
+          </div>
         </div>
       </div>
       <div className="relative mt-6 mb-7 h-px bg-border">

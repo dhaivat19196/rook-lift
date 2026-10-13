@@ -28,8 +28,34 @@ export function sortForPractice(list: Puzzle[]): Puzzle[] {
   return list.slice().sort((a, b) => a.box - b.box || b.gameEnd - a.gameEnd || b.loss - a.loss);
 }
 
+/** New (never attempted) puzzles introduced per day, so the bank feeds in gradually. */
+export const NEW_PER_DAY = 10;
+
+function startOfToday(now: number): number {
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+
+/**
+ * Reviews that are due, plus up to NEW_PER_DAY unseen puzzles (minus those already started today).
+ * New ones are picked from the most recent games first, worst mistakes first — current habits matter most.
+ */
 export function duePuzzles(all: Puzzle[], tag?: string | null, now = Date.now()): Puzzle[] {
-  return sortForPractice(all.filter((p) => isDue(p, now) && (!tag || p.tags.includes(tag))));
+  const pool = all.filter((p) => !tag || p.tags.includes(tag));
+  const reviews = pool.filter((p) => p.hist.length > 0 && isDue(p, now));
+  const dayStart = startOfToday(now);
+  const startedToday = all.filter((p) => p.hist.length > 0 && p.hist[0].t >= dayStart).length;
+  const slots = Math.max(0, NEW_PER_DAY - startedToday);
+  const fresh = pool
+    .filter((p) => p.hist.length === 0)
+    .sort((a, b) => b.gameEnd - a.gameEnd || b.loss - a.loss)
+    .slice(0, slots);
+  return [...sortForPractice(reviews), ...fresh];
+}
+
+export function unseenCount(all: Puzzle[]): number {
+  return all.filter((p) => p.hist.length === 0).length;
 }
 
 export function boxCounts(all: Puzzle[]): number[] {

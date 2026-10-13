@@ -3,14 +3,16 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { analysisQueue } from '@/lib/analysisQueue';
 import { importGames, type ImportProgress } from '@/lib/chesscom';
-import { DEFAULT_USERNAME } from '@/lib/config';
+import { DEFAULT_USERNAME, SYNC_CONFIGURED } from '@/lib/config';
 import { patchSettings, useSettings } from '@/lib/store';
+import { signInWithGoogle, useSyncState } from '@/lib/sync';
 import { Bar, Button, Card, CheckMark, Label } from '@/components/ui';
 import { cn } from '@/lib/util';
 
 export default function Onboarding() {
   const router = useRouter();
   const settings = useSettings();
+  const sync = useSyncState();
   const [name, setName] = useState(DEFAULT_USERNAME);
   const [blitz, setBlitz] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -113,6 +115,20 @@ export default function Onboarding() {
           <Button variant="ghost" className="mt-1" onClick={() => void skip()} disabled={busy}>
             Skip for now
           </Button>
+          {SYNC_CONFIGURED ? (
+            <p className="mt-3 border-t border-border pt-4 text-center text-[13px] text-muted">
+              {sync.user ? (
+                <>Signed in as {sync.user.email}. Your progress syncs automatically.</>
+              ) : (
+                <>
+                  Training on another device?{' '}
+                  <button type="button" className="font-medium text-accent" onClick={() => void signInWithGoogle()} disabled={busy}>
+                    Sign in to restore progress
+                  </button>
+                </>
+              )}
+            </p>
+          ) : null}
         </Card>
       ) : (
         <Card className="mt-8 text-center">

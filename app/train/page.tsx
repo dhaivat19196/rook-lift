@@ -37,7 +37,7 @@ export default function TrainPage() {
           href="/puzzles/"
           title="Blunder Bank"
           sub={puzzles ? `${puzzles.length} positions from your own games` : 'Your own mistakes, repeated until fixed'}
-          right={due > 0 ? <span className="rounded-full bg-accent px-3 py-1 text-[13px] font-medium text-accent-fg tabular">{due} due</span> : undefined}
+          right={due > 0 ? <span className="whitespace-nowrap rounded-full bg-accent px-3 py-1 text-[13px] font-medium text-accent-fg tabular">{due} due</span> : undefined}
         />
         <Tile href="/guard/" title="Guard Duty" sub="Spot every hanging piece in positions from your games" />
         <Tile href="/endgames/" title="Endgames" sub="Practice the essentials against Stockfish" />
