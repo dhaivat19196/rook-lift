@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "postinstall": "node scripts/copy-engine.mjs",
-    "prebuild": "node scripts/copy-engine.mjs && node scripts/gen-icons.mjs",
+    "prebuild": "node scripts/copy-engine.mjs && node scripts/gen-icons.mjs && node --no-warnings scripts/validate-content.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "npx serve out",
     "lint": "next lint",
-    "selftest": "node scripts/selftest.mjs"
+    "selftest": "node scripts/selftest.mjs",
+    "validate": "node --no-warnings scripts/validate-content.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",

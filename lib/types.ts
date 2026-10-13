@@ -45,6 +45,10 @@ export interface Puzzle {
   hist: { t: number; ok: boolean }[];
   why?: string;
   createdAt: number;
+  /** set for review items that come from a Learn lesson instead of one of the student's games */
+  src?: 'learn';
+  /** the lesson's explanation, shown instead of the game text for learn items */
+  note?: string;
 }
 
 export interface Settings {

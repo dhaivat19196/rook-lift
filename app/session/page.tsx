@@ -8,16 +8,20 @@ import { useAnalysedIds, useRecentGames } from '@/lib/queries';
 import { duePuzzles } from '@/lib/srs';
 import { usePuzzles, useProgress } from '@/lib/store';
 import type { Puzzle } from '@/lib/types';
-import { cn, fmtClock } from '@/lib/util';
+import { cn, fmtClock, localDay } from '@/lib/util';
 import EndgameDrill from '@/components/EndgameDrill';
 import PuzzleRunner from '@/components/PuzzleRunner';
 import ReviewFlow from '@/components/ReviewFlow';
 import { Bar, Button, CheckMark, Empty } from '@/components/ui';
 import { useAnalysisQueue } from '@/lib/analysisQueue';
+import DailyLesson, { type LessonFacts } from '@/components/learn/DailyLesson';
+import { sessionNote } from '@/lib/learn/coach';
+import { useWeaknesses } from '@/lib/learn/recommend';
 
 const STEPS = [
   { id: 'review', title: 'Review your last game', mins: 10 },
-  { id: 'bank', title: 'Blunder Bank', mins: 15 },
+  { id: 'lesson', title: 'Lesson', mins: 8 },
+  { id: 'bank', title: 'Blunder Bank', mins: 12 },
   { id: 'drill', title: 'Endgame drill', mins: 5 },
 ] as const;
 
@@ -30,7 +34,10 @@ export default function SessionPage() {
   const q = useAnalysisQueue();
 
   const [step, setStep] = useState(0);
-  const [results, setResults] = useState<(boolean | null)[]>([null, null, null]); // true done, false skipped
+  const [results, setResults] = useState<(boolean | null)[]>(STEPS.map(() => null)); // true done, false skipped
+  const [lessonFacts, setLessonFacts] = useState<LessonFacts | null>(null);
+  const [bankSum, setBankSum] = useState<{ attempted: number; firstTry: number } | null>(null);
+  const weaknesses = useWeaknesses();
   const [finished, setFinished] = useState(false);
   const [reviewDone, setReviewDone] = useState(false);
   const [target, setTarget] = useState<string | null | undefined>(undefined);
@@ -77,9 +84,22 @@ export default function SessionPage() {
         <div className="flex justify-center">
           <CheckMark size={72} />
         </div>
-        <h1 className="mt-6 text-[26px] font-semibold tracking-tight">{done === 3 ? 'Session complete' : 'Session saved'}</h1>
+        <h1 className="mt-6 text-[26px] font-semibold tracking-tight">{done === STEPS.length ? 'Session complete' : 'Session saved'}</h1>
         <p className="mt-1 text-[15px] text-muted tabular">
-          {done} of 3 steps · {Math.max(1, Math.round(elapsed / 60))} min
+          {done} of {STEPS.length} steps · {Math.max(1, Math.round(elapsed / 60))} min
+        </p>
+        <p className="mx-auto mt-5 max-w-sm text-left text-[15px] leading-relaxed">
+          {sessionNote({
+            reviewed: results[0] === true,
+            puzzlesAttempted: bankSum?.attempted,
+            puzzlesFirstTry: bankSum?.firstTry,
+            lessonTitle: lessonFacts?.title,
+            lessonAcc: lessonFacts?.acc ?? null,
+            drillWon: results[3] === true ? true : null,
+            weakLabel: weaknesses?.[0]?.label ?? null,
+            skipped: STEPS.filter((_, i) => results[i] === false).map((s) => s.title),
+            seed: localDay(),
+          })}
         </p>
         <div className="mx-auto mt-6 max-w-xs space-y-2 text-left">
           {STEPS.map((s, i) => (
@@ -151,6 +171,16 @@ export default function SessionPage() {
           )
         ) : null}
 
+        {s.id === 'lesson' ? (
+          <DailyLesson
+            onDone={(f) => {
+              setLessonFacts(f);
+              void advance(true, true);
+            }}
+            onSkip={() => void advance(false, false)}
+          />
+        ) : null}
+
         {s.id === 'bank' ? (
           bank === undefined ? (
             <div className="px-5 py-10 text-muted">Loading...</div>
@@ -159,7 +189,14 @@ export default function SessionPage() {
               <Empty title="No puzzles due" body="Nothing is waiting in your Blunder Bank. Come back after your next game." action={<Button onClick={() => void advance(true, false)}>Continue</Button>} />
             </div>
           ) : (
-            <PuzzleRunner puzzles={bank} doneLabel="Next step" onDone={(sum) => void advance(sum.attempted > 0, sum.attempted > 0)} />
+            <PuzzleRunner
+              puzzles={bank}
+              doneLabel="Next step"
+              onDone={(sum) => {
+                setBankSum({ attempted: sum.attempted, firstTry: sum.firstTry });
+                void advance(sum.attempted > 0, sum.attempted > 0);
+              }}
+            />
           )
         ) : null}
 

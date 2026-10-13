@@ -4,10 +4,59 @@ import { useEffect, useMemo, useState } from 'react';
 import { Chessboard } from 'react-chessboard';
 import type { Col } from '@/lib/core';
 
+/** Named arrow colours: g green = idea/best, r red = threat/bad, b blue = alternative, y yellow = attention. */
+export type ArrowColor = 'g' | 'r' | 'b' | 'y';
+
+export const ARROW_RGB: Record<ArrowColor, string> = {
+  g: 'rgb(61 143 106 / 0.85)',
+  r: 'rgb(196 72 60 / 0.85)',
+  b: 'rgb(66 120 190 / 0.85)',
+  y: 'rgb(214 164 30 / 0.9)',
+};
+export const MARK_RGB: Record<ArrowColor, string> = {
+  g: 'rgb(61 143 106 / 0.45)',
+  r: 'rgb(196 72 60 / 0.42)',
+  b: 'rgb(66 120 190 / 0.42)',
+  y: 'rgb(214 164 30 / 0.5)',
+};
+
 export interface BoardArrow {
   from: string;
   to: string;
-  color?: string;
+  /** a named colour (g/r/b/y) or any CSS colour */
+  color?: ArrowColor | string;
+  /** draws a numbered badge (1, 2, 3...) at the arrow tip, for principal variations */
+  n?: number;
+}
+
+const arrowCss = (c?: string) => (c && c in ARROW_RGB ? ARROW_RGB[c as ArrowColor] : (c ?? ARROW_RGB.g));
+export const markCss = (c?: string) => (c && c in MARK_RGB ? MARK_RGB[c as ArrowColor] : (c ?? MARK_RGB.y));
+
+function sqCenter(sq: string, orientation: Col): [number, number] {
+  const f = sq.charCodeAt(0) - 97;
+  const r = Number(sq[1]) - 1;
+  return orientation === 'w' ? [f + 0.5, 7 - r + 0.5] : [7 - f + 0.5, r + 0.5];
+}
+
+/** Numbered badges drawn over the board for principal-variation arrows. */
+function PvBadges({ arrows, orientation }: { arrows: BoardArrow[]; orientation: Col }) {
+  const nums = arrows.filter((a) => a.n !== undefined);
+  if (!nums.length) return null;
+  return (
+    <svg viewBox="0 0 8 8" className="pointer-events-none absolute inset-0 h-full w-full" aria-hidden>
+      {nums.map((a) => {
+        const [x, y] = sqCenter(a.to, orientation);
+        return (
+          <g key={a.from + a.to + a.n}>
+            <circle cx={x + 0.28} cy={y - 0.28} r={0.25} fill="rgb(var(--surface))" stroke={arrowCss(a.color)} strokeWidth={0.06} />
+            <text x={x + 0.28} y={y - 0.28} fontSize={0.3} fontWeight={600} textAnchor="middle" dominantBaseline="central" fill="rgb(var(--text))">
+              {a.n}
+            </text>
+          </g>
+        );
+      })}
+    </svg>
+  );
 }
 
 interface Props {
@@ -19,7 +68,7 @@ interface Props {
   movable?: Col;
   lastMove?: { from: string; to: string } | null;
   arrows?: BoardArrow[];
-  /** square -> CSS background (e.g. rgba) for custom highlights */
+  /** square -> CSS background (e.g. rgba) or a named colour g/r/b/y */
   highlights?: Record<string, string>;
   /** Raw tap handler (disables piece movement). */
   onSquareTap?: (sq: string) => void;
@@ -69,7 +118,7 @@ export default function Board({
       s[lastMove.from] = { background: 'rgb(var(--accent) / 0.22)' };
       s[lastMove.to] = { background: 'rgb(var(--accent) / 0.32)' };
     }
-    if (highlights) for (const [sq, bg] of Object.entries(highlights)) s[sq] = { ...s[sq], background: bg };
+    if (highlights) for (const [sq, bg] of Object.entries(highlights)) s[sq] = { ...s[sq], background: markCss(bg) };
     if (sel) s[sel] = { ...s[sel], background: ACCENT };
     for (const t of targets) {
       const occupied = !!chess.get(t as Square);
@@ -94,7 +143,7 @@ export default function Board({
   };
 
   return (
-    <div className="w-full select-none" style={{ touchAction: 'manipulation' }}>
+    <div className="relative w-full select-none" style={{ touchAction: 'manipulation' }}>
       <Chessboard
         options={{
           id: 'board',
@@ -107,7 +156,7 @@ export default function Board({
           showNotation,
           allowDrawingArrows: false,
           squareStyles,
-          arrows: (arrows ?? []).map((a) => ({ startSquare: a.from, endSquare: a.to, color: a.color ?? 'rgb(61 143 106 / 0.85)' })),
+          arrows: (arrows ?? []).map((a) => ({ startSquare: a.from, endSquare: a.to, color: arrowCss(a.color) })),
           lightSquareNotationStyle: { color: 'rgb(var(--sq-dark))' },
           darkSquareNotationStyle: { color: 'rgb(var(--sq-light))' },
           alphaNotationStyle: { fontSize: 10 },
@@ -137,6 +186,7 @@ export default function Board({
           },
         }}
       />
+      <PvBadges arrows={arrows ?? []} orientation={orientation} />
     </div>
   );
 }

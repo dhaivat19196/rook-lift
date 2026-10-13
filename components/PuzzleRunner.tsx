@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { TAG_INFO, tryUci } from '@/lib/core';
 import { getUiEngine } from '@/lib/engine';
 import { recordPuzzleResult } from '@/lib/progress';
+import { recordItem } from '@/lib/learn/progress';
 import { applySrs, savePuzzle } from '@/lib/srs';
 import type { Puzzle } from '@/lib/types';
 import { cn } from '@/lib/util';
@@ -27,11 +28,13 @@ interface Props {
   caption?: string;
   /** don't touch SRS (used for one-off retries) */
   noSrs?: boolean;
+  /** per-puzzle caption (e.g. "This came from your game on Oct 11") */
+  captionFor?: (p: Puzzle) => string;
 }
 
 const WRONG_MS = 900;
 
-export default function PuzzleRunner({ puzzles, onDone, doneLabel = 'Finish', caption, noSrs }: Props) {
+export default function PuzzleRunner({ puzzles, onDone, doneLabel = 'Finish', caption, noSrs, captionFor }: Props) {
   const [list] = useState(puzzles);
   const [idx, setIdx] = useState(0);
   const p = list[idx];
@@ -39,7 +42,7 @@ export default function PuzzleRunner({ puzzles, onDone, doneLabel = 'Finish', ca
   const [phase, setPhase] = useState<Phase>('think');
   const [stage, setStage] = useState<'first' | 'second'>('first');
   const [msg, setMsg] = useState<string>('');
-  const [hint, setHint] = useState(false);
+  const [hint, setHint] = useState(0);
   const [showSol, setShowSol] = useState(false);
   const [last, setLast] = useState<{ from: string; to: string } | null>(null);
   const [shake, setShake] = useState(false);
@@ -61,7 +64,7 @@ export default function PuzzleRunner({ puzzles, onDone, doneLabel = 'Finish', ca
     setPhase('think');
     setStage('first');
     setMsg('');
-    setHint(false);
+    setHint(0);
     setShowSol(false);
     setLast(null);
     failed.current = false;
@@ -70,6 +73,11 @@ export default function PuzzleRunner({ puzzles, onDone, doneLabel = 'Finish', ca
 
   const finalize = async (firstTry: boolean, solved: boolean) => {
     results.current.push({ firstTry, solved });
+    if (p.src === 'learn') {
+      const [lessonId, stepId] = p.id.slice('learn:'.length).split('~');
+      await recordItem(lessonId, stepId, firstTry);
+      return;
+    }
     if (!noSrs) await savePuzzle(applySrs(p, firstTry));
     await recordPuzzleResult(firstTry, solved);
   };
@@ -140,7 +148,7 @@ export default function PuzzleRunner({ puzzles, onDone, doneLabel = 'Finish', ca
         if (!alive.current) return;
         const sign = p.color === 'w' ? 1 : -1;
         const mine = r.ev * sign;
-        const bestMine = p.bestEv * sign;
+        const bestMine = p.src === 'learn' ? (await getUiEngine().analyse(p.fen, { movetime: 300 })).ev * sign : p.bestEv * sign;
         const ok = bestMine >= 9000 ? mine >= 9000 : mine >= bestMine - 30;
         if (ok) afterBest(after, false);
         else fail('Not the best move', before);
@@ -166,6 +174,7 @@ export default function PuzzleRunner({ puzzles, onDone, doneLabel = 'Finish', ca
         setFen(c.fen());
         setLast({ from: reply.from, to: reply.to });
         setStage('second');
+        setHint(0);
         setMsg('Find the follow-up');
         setPhase('think');
       }, 550);
@@ -217,8 +226,14 @@ export default function PuzzleRunner({ puzzles, onDone, doneLabel = 'Finish', ca
   const side = p.color === 'w' ? 'White' : 'Black';
   const moveNo = Math.floor(p.ply / 2) + 1;
   const bestFrom = p.best.slice(0, 2);
-  const hintHL = hint && phase === 'think' ? { [stage === 'first' ? bestFrom : (p.pv[2] ?? '').slice(0, 2)]: 'rgb(var(--accent) / 0.5)' } : undefined;
-  const arrows = showSol ? [{ from: p.best.slice(0, 2), to: p.best.slice(2, 4) }] : [];
+  const hintFrom = stage === 'first' ? bestFrom : (p.pv[2] ?? '').slice(0, 2);
+  const hintTo = stage === 'first' ? p.best.slice(2, 4) : (p.pv[2] ?? '').slice(2, 4);
+  const hintHL = hint >= 1 && phase === 'think' ? { [hintFrom]: 'y' } : undefined;
+  const hintArrows = hint >= 2 && phase === 'think' ? [{ from: hintFrom, to: hintTo, color: 'g' }] : [];
+  // the solution: the principal variation as numbered arrows (green = you, red = them)
+  const arrows = showSol
+    ? p.pv.slice(0, 3).filter((u) => u && u.length >= 4).map((u, i) => ({ from: u.slice(0, 2), to: u.slice(2, 4), color: i % 2 === 0 ? 'g' : 'r', n: p.pv.length > 1 ? i + 1 : undefined }))
+    : hintArrows;
   const done = phase === 'solved' || phase === 'revealed';
 
   return (
@@ -236,8 +251,8 @@ export default function PuzzleRunner({ puzzles, onDone, doneLabel = 'Finish', ca
       <div className="mb-3">
         <div className="text-[19px] font-semibold tracking-tight">Find the best move for {side}</div>
         <div className="mt-0.5 text-[13px] text-muted">
-          {caption ? caption + ' · ' : ''}Move {moveNo}
-          {p.color === 'b' ? '...' : ''} · {p.phase}
+          {captionFor ? captionFor(p) : (caption ? caption + ' · ' : '') + `Move ${moveNo}`}
+          {captionFor ? '' : (p.color === 'b' ? '...' : '') + ' · ' + p.phase}
         </div>
       </div>
 
@@ -265,13 +280,14 @@ export default function PuzzleRunner({ puzzles, onDone, doneLabel = 'Finish', ca
             <div className="text-[15px] text-muted">{msg || 'Your move'}</div>
             <div className="flex gap-2">
               <button
+                disabled={hint >= 2}
                 onClick={() => {
                   hinted.current = true;
-                  setHint(true);
+                  setHint((h) => Math.min(2, h + 1));
                 }}
-                className="min-h-[44px] rounded-xl border border-border px-4 text-[14px]"
+                className="min-h-[44px] rounded-xl border border-border px-4 text-[14px] disabled:opacity-40"
               >
-                Hint
+                {hint === 0 ? 'Hint' : hint === 1 ? 'Arrow' : 'Hint'}
               </button>
               <button onClick={() => void reveal()} className="min-h-[44px] rounded-xl border border-border px-4 text-[14px] text-muted">
                 Show
@@ -288,8 +304,15 @@ export default function PuzzleRunner({ puzzles, onDone, doneLabel = 'Finish', ca
                   {phase === 'solved' ? (msg === 'Correct' ? 'Correct' : 'Solved') : 'Solution'}
                 </div>
                 <div className="text-[13px] text-muted">
-                  Best was <span className="text-text">{p.bestSan}</span>. In the game you played{' '}
-                  <span className="text-text">{p.playedSan}</span> (lost {Math.round(p.loss)}%).
+                  {p.src === 'learn' ? (
+                    <>
+                      <span className="text-text">{p.bestSan}</span>. {p.note}
+                    </>
+                  ) : (
+                    <>
+                      Best was <span className="text-text">{p.bestSan}</span>. In the game you played <span className="text-text">{p.playedSan}</span> (lost {Math.round(p.loss)}%).
+                    </>
+                  )}
                 </div>
               </div>
             </div>

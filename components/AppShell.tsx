@@ -12,6 +12,7 @@ import { cn } from '@/lib/util';
 
 const TABS = [
   { href: '/', label: 'Today', icon: 'M4 11.5 12 5l8 6.5V19a1 1 0 0 1-1 1h-4v-5H9v5H5a1 1 0 0 1-1-1z' },
+  { href: '/learn/', label: 'Learn', icon: 'M5 4.5h5.5A1.5 1.5 0 0 1 12 6v13a1.5 1.5 0 0 0-1.5-1.5H5zM19 4.5h-5.5A1.5 1.5 0 0 0 12 6v13a1.5 1.5 0 0 1 1.5-1.5H19z' },
   { href: '/train/', label: 'Train', icon: 'M12 3v4m0 10v4M3 12h4m10 0h4M7 7l2 2m6 6 2 2M17 7l-2 2M9 15l-2 2' },
   { href: '/insights/', label: 'Insights', icon: 'M5 20V11m7 9V5m7 15v-7' },
   { href: '/profile/', label: 'Profile', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 8a7 7 0 0 1 14 0' },

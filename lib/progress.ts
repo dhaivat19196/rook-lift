@@ -53,6 +53,16 @@ export const BADGES: { id: string; label: string; desc: string }[] = [
   { id: 'r1200', label: 'Rating 1200', desc: 'Reach 1200 rapid' },
   { id: 'r1500', label: 'Rating 1500', desc: 'Reach 1500 rapid' },
   { id: 'r1800', label: 'Rating 1800', desc: 'Reach 1800 rapid' },
+  { id: 'first_lesson', label: 'First lesson', desc: 'Finish a Learn lesson' },
+  { id: 'notation_ninja', label: 'Notation Ninja', desc: 'Score 25 in Square Sprint' },
+  { id: 'repertoire_ready', label: 'Repertoire Ready', desc: 'Every repertoire line at 2 stars or more' },
+  { id: 'stage_found', label: 'Foundations done', desc: 'Finish every Foundations lesson' },
+  { id: 'stage_knight', label: 'Knight stage done', desc: 'Finish every Knight lesson' },
+  { id: 'stage_bishop', label: 'Bishop stage done', desc: 'Finish every Bishop lesson' },
+  { id: 'stage_rook', label: 'Rook stage done', desc: 'Finish every Rook lesson' },
+  { id: 'stage_queen', label: 'Queen stage done', desc: 'Finish every Queen lesson' },
+  { id: 'first_master_game', label: 'Master class', desc: 'Study a master game' },
+  { id: 'mastery_5', label: 'Five mastered', desc: 'Master five lessons' },
 ];
 
 export const XP = {
@@ -210,6 +220,11 @@ export function checkBadges(): Promise<void> {
         })) want.push('blunder_free');
       }
       for (const id of want) if (!have[id]) await awardBadge(id);
+      try {
+        await (await import('./learn/progress')).checkLearnBadges();
+      } catch {
+        /* learn content unavailable: ignore */
+      }
     } finally {
       badgeRun = null;
     }

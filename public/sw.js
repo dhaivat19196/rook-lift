@@ -4,11 +4,11 @@
  * - Network-first with cache fallback for navigations / HTML / RSC payloads.
  * - Never touches cross-origin requests (api.chess.com, supabase, ...).
  */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const SHELL = 'cc-shell-' + VERSION;
 const STATIC = 'cc-static-' + VERSION;
 
-const ROUTES = ['/', '/train/', '/insights/', '/profile/', '/onboarding/', '/session/', '/match/', '/review/', '/puzzles/', '/guard/', '/endgames/'];
+const ROUTES = ['/', '/train/', '/insights/', '/profile/', '/onboarding/', '/session/', '/match/', '/review/', '/puzzles/', '/guard/', '/endgames/', '/learn/', '/learn/lesson/', '/learn/practice/', '/learn/review/', '/learn/repertoire/', '/learn/games/'];
 const ASSETS = [
   '/manifest.webmanifest',
   '/icon.svg',

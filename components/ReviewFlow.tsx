@@ -1,5 +1,6 @@
 'use client';
 import { useLiveQuery } from 'dexie-react-hooks';
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { evLabel, parseGame, TAG_INFO, WHY_OPTIONS, type GameAnalysis, type MistakeInfo } from '@/lib/core';
 import { analysisQueue, useAnalysisQueue } from '@/lib/analysisQueue';
@@ -7,6 +8,9 @@ import { db } from '@/lib/db';
 import { awardReview, awardXp, XP, bumpStat } from '@/lib/progress';
 import { kvSet, useKV, useKVPrefix } from '@/lib/store';
 import type { Game, Puzzle } from '@/lib/types';
+import { gameTheme, type ThemeFacts } from '@/lib/learn/coach';
+import { lessonsForTag } from '@/lib/learn/recommend';
+import { BY_ID } from '@/lib/learn/registry';
 import { cn, fmtDate, tcLabel } from '@/lib/util';
 import Board from './Board';
 import { EvalBar, EvalGraph } from './charts';
@@ -68,9 +72,31 @@ function Review({ game, analysis, onFinished }: { game: Game; analysis: GameAnal
   const [finished, setFinished] = useState(false);
 
   useEffect(() => {
-    setShowBest(false);
+    // on a real mistake, show the engine's move (green) and yours (red) straight away
+    const m = analysis.mistakes.find((x) => x.ply === pos - 1);
+    setShowBest(!!m && m.cls !== 'i');
     setWhyOpen(false);
-  }, [pos]);
+  }, [pos, analysis.mistakes]);
+
+  const themes = useMemo(() => {
+    const by: Record<string, { count: number; loss: number }> = {};
+    for (const m of analysis.mistakes) {
+      if (m.cls === 'i') continue;
+      for (const t of m.tags) {
+        if (!TAG_INFO[t]) continue;
+        const e = (by[t] ??= { count: 0, loss: 0 });
+        e.count += 1;
+        e.loss += m.loss;
+      }
+    }
+    return Object.entries(by)
+      .sort((a, b) => b[1].loss - a[1].loss)
+      .slice(0, 3)
+      .map(([tag, v]): ThemeFacts => {
+        const id = lessonsForTag(tag)[0] ?? null;
+        return { tag, label: TAG_INFO[tag].label, count: v.count, loss: v.loss, lessonId: id, lessonTitle: id ? (BY_ID[id]?.lesson.title ?? null) : null };
+      });
+  }, [analysis.mistakes]);
 
   if (!parsed) return <div className="px-5 py-10 text-muted">Could not read this game&apos;s moves.</div>;
   const n = parsed.ucis.length;
@@ -90,13 +116,14 @@ function Review({ game, analysis, onFinished }: { game: Game; analysis: GameAnal
     if (nx) setPos(nx.ply + 1);
     else if (keyMistakes.length) setPos(keyMistakes[0].ply + 1);
   };
-  const arrows =
-    showBest && mistakeHere
-      ? [
-          { from: mistakeHere.best.slice(0, 2), to: mistakeHere.best.slice(2, 4) },
-          { from: mistakeHere.played.slice(0, 2), to: mistakeHere.played.slice(2, 4), color: 'rgb(196 72 60 / 0.8)' },
-        ]
-      : [];
+  // green = what the engine wanted, red = what was played; drawn on the position BEFORE the move
+  const showing = showBest && mistakeHere && mistakeHere.cls !== 'i';
+  const arrows = showing
+    ? [
+        { from: mistakeHere.best.slice(0, 2), to: mistakeHere.best.slice(2, 4), color: 'g' },
+        { from: mistakeHere.played.slice(0, 2), to: mistakeHere.played.slice(2, 4), color: 'r' },
+      ]
+    : [];
 
   const choose = async (id: string) => {
     if (!puzzle) return;
@@ -144,10 +171,34 @@ function Review({ game, analysis, onFinished }: { game: Game; analysis: GameAnal
         </div>
       </div>
 
+      {themes.length ? (
+        <Card className="mb-4">
+          <Label>Coach&apos;s view</Label>
+          <p className="mt-1 text-[14px] text-muted">Do not try to fix everything. These are the {themes.length === 1 ? 'one thing' : `${themes.length} things`} worth your attention from this game.</p>
+          <ul className="mt-3 space-y-3">
+            {themes.map((t) => (
+              <li key={t.tag} className="text-[15px] leading-snug">
+                {gameTheme(t, game.id)}
+                {t.lessonId ? (
+                  <Link href={`/learn/lesson/?id=${t.lessonId}`} className="ml-2 whitespace-nowrap text-accent">
+                    Open lesson
+                  </Link>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : analysis.nb + analysis.nm === 0 ? (
+        <Card className="mb-4">
+          <Label>Coach&apos;s view</Label>
+          <p className="mt-1 text-[15px] leading-snug">No real mistakes in this game. That is the habit working: keep running the blunder check and keep doing exactly this.</p>
+        </Card>
+      ) : null}
+
       <div className="flex gap-2">
         <EvalBar ev={ev} orientation={game.myColor} />
         <div className="min-w-0 flex-1">
-          <Board fen={parsed.fens[pos]} orientation={game.myColor} lastMove={lastMove} arrows={arrows} />
+          <Board fen={showing && mistakeHere ? parsed.fens[mistakeHere.ply] : parsed.fens[pos]} orientation={game.myColor} lastMove={showing ? null : lastMove} arrows={arrows} />
         </div>
       </div>
 
@@ -200,7 +251,7 @@ function Review({ game, analysis, onFinished }: { game: Game; analysis: GameAnal
           ) : null}
           <div className="mt-4 grid grid-cols-2 gap-2">
             <Button variant="secondary" className="min-h-[48px]" onClick={() => setShowBest((s) => !s)}>
-              {showBest ? 'Hide' : 'Show best'}
+              {showBest ? 'Hide arrows' : 'Show best'}
             </Button>
             {puzzle ? (
               <Button variant="secondary" className="min-h-[48px]" onClick={() => setRetry(puzzle)}>

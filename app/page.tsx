@@ -10,6 +10,7 @@ import { useSyncState } from '@/lib/sync';
 import { addDays, cn, greeting, localDay } from '@/lib/util';
 import { Bar, Card, Label, LinkButton, Ring } from '@/components/ui';
 import SyncBadge from '@/components/SyncBadge';
+import NextUpCard from '@/components/learn/NextUp';
 
 function RatingLadder({ rating }: { rating: number | null | undefined }) {
   const nodes = [400, ...LADDER.map((l) => l.rating)];
@@ -102,6 +103,8 @@ export default function TodayPage() {
             </LinkButton>
           </Card>
         ) : null}
+
+        <NextUpCard compact />
 
         <Card className="p-0">
           <div className="flex items-center justify-between px-5 pt-4">
