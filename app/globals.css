@@ -1,0 +1,130 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: 250 250 248;
+  --surface: 255 255 255;
+  --subtle: 244 244 241;
+  --border: 228 228 223;
+  --text: 24 24 22;
+  --muted: 112 112 104;
+  --accent: 45 125 90;
+  --accent-fg: 255 255 255;
+  --danger: 196 72 60;
+  --warn: 176 122 28;
+  --sq-light: 236 233 226;
+  --sq-dark: 160 172 150;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: 16 17 16;
+    --surface: 23 24 23;
+    --subtle: 32 33 31;
+    --border: 44 45 42;
+    --text: 237 237 232;
+    --muted: 148 148 140;
+    --accent: 94 186 142;
+    --accent-fg: 10 20 15;
+    --danger: 226 106 92;
+    --warn: 216 164 70;
+    --sq-light: 190 188 178;
+    --sq-dark: 96 110 92;
+    color-scheme: dark;
+  }
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  background: rgb(var(--bg));
+}
+
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--text));
+  font-feature-settings: 'tnum' 1, 'cv11' 1;
+  -webkit-font-smoothing: antialiased;
+  touch-action: manipulation;
+  overscroll-behavior-y: none;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.08);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes toast-in {
+  from {
+    transform: translate(-50%, -12px);
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, 0);
+    opacity: 1;
+  }
+}
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.anim-pop {
+  animation: pop 0.35s ease-out both;
+}
+.anim-shake {
+  animation: shake 0.3s ease-in-out;
+}
+.anim-toast {
+  animation: toast-in 0.25s ease-out both;
+}
+.check-path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: draw 0.4s 0.1s ease-out forwards;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
