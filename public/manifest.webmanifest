@@ -1,6 +1,6 @@
 {
-  "name": "Chess Climb",
-  "short_name": "Chess Climb",
+  "name": "Rook Lift",
+  "short_name": "Rook Lift",
   "description": "Personal chess training that learns from your own games.",
   "id": "/",
   "start_url": "/",

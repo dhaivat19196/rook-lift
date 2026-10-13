@@ -22,13 +22,13 @@ function Group({ title, children }: { title: string; children: React.ReactNode }
 
 async function exportBackup() {
   const [kv, games, meta] = await Promise.all([db.kv.toArray(), db.games.toArray(), db.meta.toArray()]);
-  const blob = new Blob([JSON.stringify({ app: 'chess-climb', version: 1, exportedAt: new Date().toISOString(), kv, games, meta })], {
+  const blob = new Blob([JSON.stringify({ app: 'rook-lift', version: 1, exportedAt: new Date().toISOString(), kv, games, meta })], {
     type: 'application/json',
   });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `chess-climb-backup-${localDay()}.json`;
+  a.download = `rook-lift-backup-${localDay()}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -264,7 +264,7 @@ export default function ProfilePage() {
           <Card>
             <div className="space-y-3 text-[13px] leading-relaxed text-muted">
               <p>
-                <b className="font-medium text-text">Chess Climb</b> is a personal training tool. It runs entirely on your device: no accounts needed, no data leaves unless you sign in to sync.
+                <b className="font-medium text-text">Rook Lift</b> is a personal training tool. It runs entirely on your device: no accounts needed, no data leaves unless you sign in to sync.
               </p>
               <p>
                 Analysis uses <b className="font-medium text-text">Stockfish</b> (via the stockfish.js WebAssembly port by Nathan Rugg), which is free software licensed under the GNU General Public License v3. Source:{' '}
@@ -283,7 +283,7 @@ export default function ProfilePage() {
               </p>
               <p>Not affiliated with or endorsed by Chess.com. Game data is read from Chess.com&apos;s public API.</p>
               <p>
-                Fair play: Chess Climb only analyzes games that have already finished. Never use an engine during a live game, and do not use this app while playing.
+                Fair play: Rook Lift only analyzes games that have already finished. Never use an engine during a live game, and do not use this app while playing.
               </p>
             </div>
           </Card>

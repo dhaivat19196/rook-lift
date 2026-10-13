@@ -96,7 +96,7 @@ export default function TodayPage() {
         {needsImport ? (
           <Card>
             <div className="text-[17px] font-semibold">Import your games</div>
-            <p className="mt-1 text-[14px] text-muted">Chess Climb learns from your own Chess.com games. It takes about a minute.</p>
+            <p className="mt-1 text-[14px] text-muted">Rook Lift learns from your own Chess.com games. It takes about a minute.</p>
             <LinkButton href="/onboarding/" className="mt-4">
               Get started
             </LinkButton>

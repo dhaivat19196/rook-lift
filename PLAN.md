@@ -1,4 +1,4 @@
-# Chess Climb — build plan
+# Rook Lift — build plan
 
 Goal: take chessDh19 from 647 → 1800 rapid. Personal, mobile-first PWA that learns from
 your own Chess.com games. No LLM. Engine runs on-device.

@@ -65,7 +65,7 @@ export default function Onboarding() {
   return (
     <div className="px-5 pt-14">
       <Label>Welcome</Label>
-      <h1 className="mt-2 text-[34px] font-semibold leading-[1.1] tracking-tight">Chess Climb</h1>
+      <h1 className="mt-2 text-[34px] font-semibold leading-[1.1] tracking-tight">Rook Lift</h1>
       <p className="mt-3 max-w-sm text-[16px] leading-relaxed text-muted">
         Find the habits that cost you games, then train them away. Everything runs on your device.
       </p>

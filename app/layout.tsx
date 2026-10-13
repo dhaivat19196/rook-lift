@@ -3,11 +3,11 @@ import AppShell from '@/components/AppShell';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Chess Climb',
+  title: 'Rook Lift',
   description: 'Personal chess training that learns from your own games.',
   manifest: '/manifest.webmanifest',
-  applicationName: 'Chess Climb',
-  appleWebApp: { capable: true, title: 'Chess Climb', statusBarStyle: 'default' },
+  applicationName: 'Rook Lift',
+  appleWebApp: { capable: true, title: 'Rook Lift', statusBarStyle: 'default' },
   icons: {
     icon: [
       { url: '/icon.svg', type: 'image/svg+xml' },

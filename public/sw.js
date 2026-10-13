@@ -1,4 +1,4 @@
-/* Chess Climb service worker. Hand-written, no dependencies.
+/* Rook Lift service worker. Hand-written, no dependencies.
  * - Precaches the app shell routes, their /_next/static assets and the Stockfish engine on install.
  * - Cache-first for /_next/static/* and /engine/*.
  * - Network-first with cache fallback for navigations / HTML / RSC payloads.
