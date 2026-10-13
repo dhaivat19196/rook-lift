@@ -6,6 +6,7 @@ import { BackBar, Empty, LinkButton } from '@/components/ui';
 import { TAG_INFO } from '@/lib/core';
 import { useActiveTimer, useQueryParams } from '@/lib/hooks';
 import { useGamePool } from '@/lib/learn/pool';
+import { variantOf } from '@/lib/learn/variants';
 import { BY_ID, scoredSteps } from '@/lib/learn/registry';
 import type { Step } from '@/lib/learn/types';
 import { shuffle } from '@/lib/util';
@@ -23,7 +24,10 @@ export default function PracticePage() {
   const steps = useMemo<Step[]>(() => {
     if (!ref) return [];
     if (ref.lesson.skill) return [{ id: 'pm', t: 'gen', skill: ref.lesson.skill, n: 10, phase: 'practice' }];
-    return shuffle(scoredSteps(ref.lesson)).slice(0, 8);
+    // the lesson's own positions, mirrored or colour-swapped so they are not the same as last time
+    return shuffle(scoredSteps(ref.lesson))
+      .slice(0, 8)
+      .map((s) => (s.t === 'move' ? (variantOf(s, Math.random() < 0.5, Math.random() < 0.5, ref.lesson.rule) ?? s) : s));
     // a new set each round
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ref, round]);

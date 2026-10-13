@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 import { Pool } from './lib/pool.mjs';
 import { winnablePieces } from '../lib/learn/see.ts';
 import { generate, mulberry32, verifyGenerated } from '../lib/learn/gen.ts';
+import { variantEligible, variantOf } from '../lib/learn/variants.ts';
 import { getTable, isKpk, kpkBestMoves, kpkResult, solve } from '../lib/learn/kpk.ts';
 import { UNITS, GAMES } from '../lib/learn/content/index.ts';
 
@@ -36,7 +37,7 @@ await pool.start();
 
 const fails = [];
 const warns = [];
-const counts = { kpk: 0, lessons: 0, steps: 0, fens: 0, moves: 0, engine: 0, lines: 0, plies: 0, generated: 0, genCached: 0, games: 0, gamePlies: 0, playouts: 0, claims: 0, hanging: 0 };
+const counts = { variants: 0, kpk: 0, lessons: 0, steps: 0, fens: 0, moves: 0, engine: 0, lines: 0, plies: 0, generated: 0, genCached: 0, games: 0, gamePlies: 0, playouts: 0, claims: 0, hanging: 0 };
 const fail = (where, msg) => fails.push(`${where}: ${msg}`);
 const warn = (where, msg) => warns.push(`${where}: ${msg}`);
 
@@ -219,6 +220,20 @@ async function checkMoveStep(where, s) {
       if (top.length > 1 && s.ans.length === 1 && sc(top[1]) >= sc(top[0]) - TOL && !isMateScore(sc(top[0]))) {
         warn(tag, `second move ${top[1].pv[0]} is about as good (${sc(top[1])} vs ${sc(top[0])}); other moves will be accepted at runtime`);
       }
+    }
+  }
+  // the "Practice more" mirrored/colour-swapped variant of this step must be legal and engine-sound too
+  if (variantEligible(s) && s.kind !== 'cmd') {
+    for (const [mi, sw] of [[true, false], [false, true]]) {
+      const v = variantOf(s, mi, sw, 'x');
+      if (!v) {
+        fail(where, `variant (mirror=${mi}, swap=${sw}) could not be built`);
+        continue;
+      }
+      counts.variants++;
+      if (!load(where + ' variant', v.fen)) continue;
+      const j = await judge(v.fen, v.ans[0]);
+      if (!okVsBest(j)) fail(where, `variant (mirror=${mi}, swap=${sw}) answer ${v.ans[0]} disagrees with Stockfish (${j.ms} vs ${j.bs})`);
     }
   }
   // moves listed as wrong must really be worse
@@ -529,7 +544,7 @@ if (!only) {
 await pool.stop();
 
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
-console.log(`validate-content: ${counts.generated} generated samples verified (+${counts.genCached} skills unchanged since last pass), ${counts.lessons} lessons, ${counts.steps} steps, ${counts.fens} FENs, ${counts.moves} scripted moves, ${counts.lines} lines (${counts.plies} plies), ${counts.games} games (${counts.gamePlies} plies), ${counts.playouts} playouts, ${counts.hanging} hanging-piece sets, ${counts.kpk} tablebase-checked endgame items, ${counts.claims} engine claims`);
+console.log(`validate-content: ${counts.generated} generated samples verified (+${counts.genCached} skills unchanged since last pass), ${counts.lessons} lessons, ${counts.steps} steps, ${counts.fens} FENs, ${counts.moves} scripted moves, ${counts.lines} lines (${counts.plies} plies), ${counts.games} games (${counts.gamePlies} plies), ${counts.playouts} playouts, ${counts.hanging} hanging-piece sets, ${counts.kpk} tablebase-checked endgame items, ${counts.variants} practice-more variants, ${counts.claims} engine claims`);
 console.log(`engine: depth ${DEPTH}, ${counts.engine} comparisons, ${pool.misses} searches run, ${pool.hits} cached, ${secs}s`);
 if (warns.length) {
   console.log(`\n${warns.length} warning(s):`);
