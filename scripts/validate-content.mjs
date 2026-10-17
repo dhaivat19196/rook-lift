@@ -2,6 +2,7 @@
 //   --only=<prefix>   only lessons whose id starts with the prefix (games are skipped)
 //   --depth=<n>       override the engine depth for best-move checks (default 16; never lower than 14)
 //   --no-cache        ignore the engine result cache
+//   --course=<id>     only this opening course (the lessons are skipped); `--only=op` runs all opening courses alone
 //
 // What is checked (nothing here is weakened to make content pass; fix the content instead):
 //   * every FEN is legal; every scripted move is legal in sequence
@@ -24,6 +25,7 @@ import { generate, mulberry32, verifyGenerated } from '../lib/learn/gen.ts';
 import { variantEligible, variantOf } from '../lib/learn/variants.ts';
 import { getTable, isKpk, kpkBestMoves, kpkResult, solve } from '../lib/learn/kpk.ts';
 import { UNITS, GAMES } from '../lib/learn/content/index.ts';
+import { validateOpenings } from './validate-openings.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')).map(([k, v]) => [k, v ?? true]));
@@ -32,7 +34,7 @@ const LINE_DEPTH = 12;
 const TOL = 30;
 const MATE = 90000;
 
-const pool = new Pool(undefined, args['no-cache'] ? undefined : join(root, '.cache', 'validate-engine.json'));
+const pool = new Pool(Number(process.env.VALIDATE_WORKERS) || undefined, args['no-cache'] ? undefined : join(root, '.cache', 'validate-engine.json'));
 await pool.start();
 
 const fails = [];
@@ -532,19 +534,30 @@ for (const u of UNITS) {
     if (lessonIds.has(l.id)) fail(l.id, 'duplicate lesson id');
     lessonIds.add(l.id);
     if (only && !l.id.startsWith(only)) continue;
+    if (args.course) continue;
     jobs.push(checkLesson(u, l));
   }
 }
 await Promise.all(jobs);
-if (!only) {
+if (!only && !args.course) {
   for (const g of GAMES) checkGame(g);
   const gids = new Set(GAMES.map((g) => g.id));
   if (gids.size !== GAMES.length) fail('games', 'duplicate game ids');
+}
+let opening = null;
+if (!only || only === 'op' || args.course) {
+  opening = await validateOpenings({ pool, fail, warn, depth: DEPTH, course: typeof args.course === 'string' ? args.course : null });
 }
 await pool.stop();
 
 const secs = ((Date.now() - t0) / 1000).toFixed(1);
 console.log(`validate-content: ${counts.generated} generated samples verified (+${counts.genCached} skills unchanged since last pass), ${counts.lessons} lessons, ${counts.steps} steps, ${counts.fens} FENs, ${counts.moves} scripted moves, ${counts.lines} lines (${counts.plies} plies), ${counts.games} games (${counts.gamePlies} plies), ${counts.playouts} playouts, ${counts.hanging} hanging-piece sets, ${counts.kpk} tablebase-checked endgame items, ${counts.variants} practice-more variants, ${counts.claims} engine claims`);
+if (opening) {
+  const o = opening.stats;
+  console.log(`openings: ${o.courses} courses, ${o.chapters} chapters, ${o.edges} moves in trees (${o.decisions} repertoire decision nodes), ${o.mistakes} punished opponent mistakes, ${o.plans} plan questions, ${o.traps} traps`);
+  for (const r of opening.per) console.log(`  ${r.id}: ${r.chapters} chapters, ${r.decisions} decision nodes, ${r.edges} moves, ${r.plans} plan questions, ${r.traps} traps`);
+  if (o.practical.length) console.log(`  sound:'practical' moves (${o.practical.length}): ${o.practical.join('; ')}`);
+}
 console.log(`engine: depth ${DEPTH}, ${counts.engine} comparisons, ${pool.misses} searches run, ${pool.hits} cached, ${secs}s`);
 if (warns.length) {
   console.log(`\n${warns.length} warning(s):`);
