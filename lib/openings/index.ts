@@ -1,9 +1,10 @@
 import { compileCourse } from './course.ts';
+import { caro } from './courses/caro.ts';
 import { sicilian } from './courses/dragon.ts';
 import { london } from './courses/london.ts';
 import type { CompiledChapter, CompiledCourse, Course } from './types.ts';
 
-export const COURSES: Course[] = [london, sicilian];
+export const COURSES: Course[] = [london, sicilian, caro];
 
 export function courseById(id: string): Course | undefined {
   return COURSES.find((c) => c.id === id);
