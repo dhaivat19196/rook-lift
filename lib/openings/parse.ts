@@ -49,6 +49,19 @@ function tokenize(src: string): Tok[] {
       if (j < 0) throw new Error('unterminated comment near: ' + src.slice(i, i + 40));
       out.push({ t: 'comment', v: src.slice(i + 1, j).trim() });
       i = j + 1;
+    } else if (ch === '@') {
+      // tags written after the closing brace run to the end of the line (any closing parentheses end the variation)
+      let j = src.indexOf('\n', i);
+      if (j < 0) j = src.length;
+      let tail = src.slice(i, j).replace(/\s+$/, '');
+      let closes = 0;
+      while (tail.endsWith(')')) {
+        tail = tail.slice(0, -1).replace(/\s+$/, '');
+        closes++;
+      }
+      out.push({ t: 'comment', v: tail });
+      for (let k = 0; k < closes; k++) out.push({ t: 'close', v: ')' });
+      i = j;
     } else if (ch === '(') {
       out.push({ t: 'open', v: '(' });
       i++;

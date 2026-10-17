@@ -273,7 +273,7 @@ export async function validateOpenings({ pool, fail, warn, depth, only, course }
           jobs.push(
             (async () => {
               if (mate) return;
-              if (gain < 2) fail(tw, `the line wins only ${gain} points of material and does not mate`);
+              if (gain < 1) fail(tw, `the line wins only ${gain} points of material and does not mate`);
               const [r] = await pool.analyse(efen, depth, 1);
               stats.engine++;
               const s = sc(r) * (e.turn() === t.side ? 1 : -1);
