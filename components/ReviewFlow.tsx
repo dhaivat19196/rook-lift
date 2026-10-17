@@ -16,6 +16,7 @@ import Board from './Board';
 import { EvalBar, EvalGraph } from './charts';
 import PuzzleRunner from './PuzzleRunner';
 import { Bar, Button, Card, CheckMark, Label, Spinner } from './ui';
+import GameRepertoire from './openings/GameRepertoire';
 
 const REASON: Record<string, string> = {
   checkmated: 'checkmated',
@@ -170,6 +171,8 @@ function Review({ game, analysis, onFinished }: { game: Game; analysis: GameAnal
           <Stat label="Accuracy" v={Math.round(analysis.acc) + '%'} />
         </div>
       </div>
+
+      <GameRepertoire gameId={game.id} pgn={game.pgn} myColor={game.myColor} />
 
       {themes.length ? (
         <Card className="mb-4">

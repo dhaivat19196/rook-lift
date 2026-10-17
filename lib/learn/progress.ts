@@ -234,8 +234,7 @@ export async function checkLearnBadges(): Promise<void> {
   const want: string[] = [];
   if (Object.values(progs).some((p) => p.completedAt)) want.push('first_lesson');
   if ((progs['mg-sprint']?.hi ?? 0) >= 25 || (progs['mg-sprint']?.hiB ?? 0) >= 25) want.push('notation_ninja');
-  const rep = ALL.filter((r) => r.lesson.id.startsWith('rep-'));
-  if (rep.length && rep.every((r) => done(r.lesson.id, 2))) want.push('repertoire_ready');
+  if (await repertoireReady()) want.push('repertoire_ready');
   const stageBadge = ['stage_found', 'stage_knight', 'stage_bishop', 'stage_rook', 'stage_queen'];
   for (let s = 0; s < stageBadge.length; s++) {
     const ls = ALL.filter((r) => r.stage === s && r.unit.track !== 'games' && !r.lesson.mini);
@@ -247,6 +246,21 @@ export async function checkLearnBadges(): Promise<void> {
 }
 
 export { BY_ID };
+
+/** London learned (80%+) and one Black course learned (80%+). */
+async function repertoireReady(): Promise<boolean> {
+  const { allCompiled } = await import('../openings/index.ts');
+  const { courseStats, loadCourseRecs } = await import('../openings/progress.ts');
+  const learned = async (id: string) => {
+    const c = allCompiled().find((x) => x.id === id);
+    if (!c) return false;
+    const s = courseStats(c, await loadCourseRecs(id));
+    return s.total > 0 && s.learned / s.total >= 0.8;
+  };
+  if (!(await learned('london'))) return false;
+  for (const id of ['sicilian', 'caro', 'qgd', 'e5']) if (await learned(id)) return true;
+  return false;
+}
 
 /** Due missed lesson questions as puzzles, so Quick bites can mix them in with the Blunder Bank. Move questions only. */
 export async function dueLearnPuzzles(max = 2): Promise<import('../types').Puzzle[]> {

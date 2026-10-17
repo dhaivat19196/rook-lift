@@ -32,7 +32,7 @@ export default function TrainPage() {
     <div>
       <PageTitle title="Train" sub="Fix the habits that cost you games." />
       <div className="space-y-3 px-5">
-        <Tile href="/session/" title="Daily session" sub="Review · Blunder Bank · Endgame · about 30 min" />
+        <Tile href="/session/" title="Daily session" sub="Review · Lesson · Openings · Blunder Bank · Endgame" />
         <Tile
           href="/puzzles/"
           title="Blunder Bank"

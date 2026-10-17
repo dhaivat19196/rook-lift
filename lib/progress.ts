@@ -55,7 +55,7 @@ export const BADGES: { id: string; label: string; desc: string }[] = [
   { id: 'r1800', label: 'Rating 1800', desc: 'Reach 1800 rapid' },
   { id: 'first_lesson', label: 'First lesson', desc: 'Finish a Learn lesson' },
   { id: 'notation_ninja', label: 'Notation Ninja', desc: 'Score 25 in Square Sprint' },
-  { id: 'repertoire_ready', label: 'Repertoire Ready', desc: 'Every repertoire line at 2 stars or more' },
+  { id: 'repertoire_ready', label: 'Repertoire Ready', desc: 'The London and one Black opening course learned to 80%' },
   { id: 'stage_found', label: 'Foundations done', desc: 'Finish every Foundations lesson' },
   { id: 'stage_knight', label: 'Knight stage done', desc: 'Finish every Knight lesson' },
   { id: 'stage_bishop', label: 'Bishop stage done', desc: 'Finish every Bishop lesson' },

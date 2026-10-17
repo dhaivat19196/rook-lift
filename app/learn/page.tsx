@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { Stars } from '@/components/learn/bits';
 import NextUpCard from '@/components/learn/NextUp';
+import OpeningsSection from '@/components/openings/OpeningsSection';
 import { Bar, PageTitle } from '@/components/ui';
 import { MASTERY_LABEL, masteryOf, useLearnProgress, type LessonProg, type Mastery } from '@/lib/learn/progress';
 import { allowedStage, useRecommendation } from '@/lib/learn/recommend';
@@ -70,7 +71,7 @@ export default function LearnPage() {
 
         <div className="grid grid-cols-3 gap-3">
           {[
-            { href: '/learn/repertoire/', t: 'Repertoire', s: 'Your openings' },
+            { href: '/learn/repertoire/', t: 'Openings', s: 'Your results' },
             { href: '/learn/games/', t: 'Master games', s: 'Study the greats' },
             { href: '/learn/lesson/?id=mg-sprint', t: 'Sprint', s: 'Square names' },
           ].map((x) => (
@@ -80,6 +81,8 @@ export default function LearnPage() {
             </Link>
           ))}
         </div>
+
+        <OpeningsSection />
 
         <div className="space-y-3 pt-2">
           {stats.map(({ st, total, done }) => {

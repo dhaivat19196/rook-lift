@@ -10,6 +10,7 @@ import { usePuzzles } from '@/lib/store';
 import type { Puzzle } from '@/lib/types';
 import { cn } from '@/lib/util';
 import PuzzleRunner, { type PuzzleSummary } from '@/components/PuzzleRunner';
+import OpeningBlock from '@/components/openings/OpeningBlock';
 import { BackBar, Bar, Button, Card, Chip, CheckMark, Empty, Label, LinkButton } from '@/components/ui';
 
 function Runner({ list, kind, onAgain }: { list: Puzzle[]; kind: string; onAgain?: () => void }) {
@@ -26,6 +27,7 @@ function Runner({ list, kind, onAgain }: { list: Puzzle[]; kind: string; onAgain
         <p className="mt-1 text-[15px] text-muted tabular">
           {summary.solved} solved · {summary.firstTry} first try · {summary.attempted} attempted
         </p>
+        {kind === 'Quick bites' ? <OpeningBlock /> : null}
         <div className="mx-auto mt-8 max-w-xs space-y-2">
           {onAgain ? <Button onClick={onAgain}>Another 5</Button> : null}
           <Button variant="secondary" onClick={() => router.push('/')}>
@@ -82,6 +84,7 @@ export default function PuzzlesPage() {
         ) : (
           <div className="px-5">
             <Empty title="No puzzles yet" body="Puzzles come from the blunders found in your analyzed games. Check back after analysis runs." action={<LinkButton href="/profile/" variant="secondary">See analysis</LinkButton>} />
+            <OpeningBlock />
           </div>
         )}
       </div>

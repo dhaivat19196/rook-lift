@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { DRILLS } from '@/lib/endgames';
 import { useActiveTimer } from '@/lib/hooks';
 import { awardXp, bumpStat, markActive, XP } from '@/lib/progress';
@@ -16,11 +16,14 @@ import { Bar, Button, CheckMark, Empty } from '@/components/ui';
 import { useAnalysisQueue } from '@/lib/analysisQueue';
 import DailyLesson, { type LessonFacts } from '@/components/learn/DailyLesson';
 import { sessionNote } from '@/lib/learn/coach';
+import DueReview from '@/components/openings/DueReview';
+import { dueNodes } from '@/lib/openings/progress';
 import { useWeaknesses } from '@/lib/learn/recommend';
 
-const STEPS = [
+const ALL_STEPS = [
   { id: 'review', title: 'Review your last game', mins: 10 },
   { id: 'lesson', title: 'Lesson', mins: 8 },
+  { id: 'openings', title: 'Opening review', mins: 5 },
   { id: 'bank', title: 'Blunder Bank', mins: 12 },
   { id: 'drill', title: 'Endgame drill', mins: 5 },
 ] as const;
@@ -33,8 +36,14 @@ export default function SessionPage() {
   const puzzles = usePuzzles();
   const q = useAnalysisQueue();
 
+  // the opening review step only appears when positions are due
+  const [openDue, setOpenDue] = useState<number | undefined>(undefined);
+  useEffect(() => {
+    void dueNodes(40).then((d) => setOpenDue(d.length));
+  }, []);
+  const STEPS = useMemo(() => ALL_STEPS.filter((s) => s.id !== 'openings' || (openDue ?? 0) > 0), [openDue]);
   const [step, setStep] = useState(0);
-  const [results, setResults] = useState<(boolean | null)[]>(STEPS.map(() => null)); // true done, false skipped
+  const [results, setResults] = useState<(boolean | null)[]>(ALL_STEPS.map(() => null)); // true done, false skipped
   const [lessonFacts, setLessonFacts] = useState<LessonFacts | null>(null);
   const [bankSum, setBankSum] = useState<{ attempted: number; firstTry: number } | null>(null);
   const weaknesses = useWeaknesses();
@@ -65,7 +74,7 @@ export default function SessionPage() {
     setResults(next);
     stepStart.current = elapsed;
     if (step + 1 >= STEPS.length) {
-      const all = next.every((r) => r === true);
+      const all = next.slice(0, STEPS.length).every((r) => r === true);
       if (all) await awardXp(XP.fullSession, 'Full session');
       if (next.some((r) => r === true)) {
         await bumpStat('sessions');
@@ -95,7 +104,7 @@ export default function SessionPage() {
             puzzlesFirstTry: bankSum?.firstTry,
             lessonTitle: lessonFacts?.title,
             lessonAcc: lessonFacts?.acc ?? null,
-            drillWon: results[3] === true ? true : null,
+            drillWon: results[STEPS.findIndex((x) => x.id === 'drill')] === true ? true : null,
             weakLabel: weaknesses?.[0]?.label ?? null,
             skipped: STEPS.filter((_, i) => results[i] === false).map((s) => s.title),
             seed: localDay(),
@@ -116,6 +125,7 @@ export default function SessionPage() {
     );
   }
 
+  if (openDue === undefined) return <div className="px-5 py-10 text-muted">Loading...</div>;
   const s = STEPS[step];
   const stepSecs = Math.max(0, elapsed - stepStart.current);
   const over = stepSecs > s.mins * 60;
@@ -178,6 +188,15 @@ export default function SessionPage() {
               void advance(true, true);
             }}
             onSkip={() => void advance(false, false)}
+          />
+        ) : null}
+
+        {s.id === 'openings' ? (
+          <DueReview
+            limit={10}
+            doneLabel="Next step"
+            emptyAction={() => void advance(true, false)}
+            onDone={(sum) => void advance(sum.asked > 0, sum.asked > 0)}
           />
         ) : null}
 

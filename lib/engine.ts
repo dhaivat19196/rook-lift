@@ -18,6 +18,10 @@ export interface AnalyseOpts {
   movetime?: number;
   depth?: number;
   multipv?: number;
+  /** UCI "Skill Level" 0..20 (weaker play for sparring); unset = full strength */
+  skill?: number;
+  /** UCI_LimitStrength with this Elo (Stockfish's floor is about 1320) */
+  elo?: number;
 }
 
 interface Task {
@@ -36,6 +40,8 @@ export class Engine {
   private busy = false;
   private epoch = 0;
   private multipv = 1;
+  /** UCI options last sent, so only changes are posted */
+  private applied: Record<string, string> = {};
   private handler: ((line: string) => void) | null = null;
 
   constructor(private url: string = ENGINE_URL) {}
@@ -83,6 +89,8 @@ export class Engine {
     this.worker?.terminate();
     this.worker = null;
     this.ready = null;
+    this.applied = {};
+    this.multipv = 1;
   }
 
   analyse(fen: string, opts: AnalyseOpts = {}): Promise<EngineResult> {
@@ -107,6 +115,8 @@ export class Engine {
     this.worker = null;
     this.ready = null;
     this.busy = false;
+    this.applied = {};
+    this.multipv = 1;
   }
 
   private async pump() {
@@ -166,6 +176,18 @@ export class Engine {
           });
         }
       };
+      // strength options are applied on every search, so a shared engine always goes back to full strength
+      const want: Record<string, string> = {
+        'Skill Level': String(opts.skill ?? 20),
+        UCI_LimitStrength: opts.elo !== undefined ? 'true' : 'false',
+      };
+      if (opts.elo !== undefined) want.UCI_Elo = String(Math.max(1320, Math.min(3190, opts.elo)));
+      for (const [k, v] of Object.entries(want)) {
+        if (this.applied[k] !== v) {
+          w.postMessage(`setoption name ${k} value ${v}`);
+          this.applied[k] = v;
+        }
+      }
       if (mpv !== this.multipv) {
         w.postMessage(`setoption name MultiPV value ${mpv}`);
         this.multipv = mpv;

@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import LessonRunner from '@/components/learn/LessonRunner';
 import MiniGame from '@/components/learn/MiniGames';
 import { Stars } from '@/components/learn/bits';
@@ -11,6 +11,7 @@ import { MASTERY_LABEL, masteryOf, useLearnProgress } from '@/lib/learn/progress
 import { recommend, useWeaknesses } from '@/lib/learn/recommend';
 import { BY_ID, scoredSteps } from '@/lib/learn/registry';
 import type { Step } from '@/lib/learn/types';
+import { redirectForOldLesson } from '@/lib/openings/progress';
 import { useRating } from '@/lib/queries';
 import { shuffle } from '@/lib/util';
 
@@ -59,7 +60,12 @@ export default function LessonPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [started]);
 
+  const moved = redirectForOldLesson(id);
+  useEffect(() => {
+    if (moved) router.replace(moved);
+  }, [moved, router]);
   if (!q) return null;
+  if (moved) return <div className="px-5 pt-10 text-muted">This lesson is now part of an opening course. Taking you there...</div>;
   if (!ref) {
     return (
       <div>

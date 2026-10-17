@@ -27,11 +27,15 @@ export interface LessonRef {
   index: number;
 }
 
-const sortedUnits = UNITS.map((u, i) => ({ u, i })).sort((a, b) => a.u.stage - b.u.stage || a.i - b.i).map((x) => x.u);
+// The old repertoire units now live in the opening courses (lib/openings). Their lessons stay loadable by id
+// (stored progress, review items) but they are no longer part of the path.
+export const isOldRepertoire = (u: Unit) => u.id.startsWith('rep-');
+const sortedUnits = UNITS.filter((u) => !isOldRepertoire(u)).map((u, i) => ({ u, i })).sort((a, b) => a.u.stage - b.u.stage || a.i - b.i).map((x) => x.u);
 
 export const ALL: LessonRef[] = [];
 for (const u of sortedUnits) for (const l of u.lessons) ALL.push({ lesson: l, unit: u, stage: u.stage, index: ALL.length });
 export const BY_ID: Record<string, LessonRef> = Object.fromEntries(ALL.map((r) => [r.lesson.id, r]));
+for (const u of UNITS.filter(isOldRepertoire)) for (const l of u.lessons) BY_ID[l.id] = { lesson: l, unit: u, stage: u.stage, index: -1 };
 export const UNITS_SORTED = sortedUnits;
 
 export function stageOfRating(rating: number | null | undefined): number {
